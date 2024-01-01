@@ -1,105 +1,55 @@
-= nf-plugin-template: a Nextflow Plugin Template
+= nf-parquet: a Nextflow Plugin to read/write parquet files
 Jorge Aguilera <jagedn@gmail.com>
 v0.0.1
 :toc: left
 
-nf-plugin-template is a gradle template to create Nextflow plugins
-
-You can grab the template from:
-
-https://github.com/jagedn/nf-plugin-template/
+nf-parquet is a Nextflow plugin to read parquet files
 
 == Features
 
-- minimal changes
-- simple structure, oriented to a single plugin
-- gradle 8.4
-- custom Gradle tasks included
-- ready to publish GitHub releases
-- asciidoctor documentation + GitHub Pages
+- multiple configurable schemas
 
 == Changes
 
-This is a fork of the original jagedn/nf-plugin-template repository. In case you're using
-original repo this new repo contains:
+== Read parquet file
 
-- use gradle.properties to configure required variables
-- publish releases using JReleaser
+Given a parquet file with 2 fields, `myString` and `myInteger` you can send all records to a Channel:
 
+Configure a schema in `nextflow.config` parquet plugin section
 
-== Steps
-
-- Create a new Github project using this template
-- Clone in a directory with the name of your new plugin, i.e.
-`nf-my-awesome-plugin`
-
-- configure all details about your project:
-
-.gradle.properties
+.nextflow.config
+[source]
 ----
-publish_description = An unofficial template to build Nextflow Plugins
-publish_url = https://github.com/edn-es/nf-plugin-template
-publish_year = 2023
-publish_developer = jagedn
-publish_developerName = Jorge Aguilera
-publish_git = scm:git:https://github.com/edn-es/nf-plugin-template.git
-publish_repoOwner = edn-es
-----
-
-- add your dependencies. For example, add apache poi libs from mavenCentral
-
-.nf-plugin.gradle
-----
-dependencies {
-    // add your dependencies, for example:
-    implementation 'org.apache.poi:poi:5.2.4'
-    implementation 'org.apache.poi:poi-ooxml:5.2.4'
+parquet {
+    schemas = [
+            mySchema : [
+                    [
+                            "name"   : "myString",
+                            "type"   : ["null", "string"]
+                    ], [
+                            "name"   : "myInteger",
+                            "type"   : ["null", "int"]
+                    ]
+            ],
+            onlyMyString : [
+                    [
+                            "name"   : "myString",
+                            "type"   : ["null", "string"]
+                    ]
+            ],
+    ]
 }
 ----
 
-- rename `src/main/groovy/com/nextflow/plugin` directory and `ExamplePlugin.groovy` file with the package and name of your plugin
 
-- rename ExamplePlugin with a better name (for example `MyAwesomePlugin`)
+.read.nf
+[source]
+----
+include { fromParquetFile } from 'plugin/nf-parquet'
 
-- delete/rename/update the `ExampleFunctions.groovy` with your extension
+channel
+        .fromParquetFile( Path.of('area1.parquet'), 'mySchema')
+        | view
+----
 
-You *don't* need to create the extensions points file (`src/main/resources/META-INF/extensions.idx`)
-as `registerIdx` task will scan your sources and build it
-
-*and this is all*, you can run for example `./gradlew jsonPlugin` to generate Nextflow's artifacts
-
-== Test
-
-You can/need to create as many tests you consider. This template includes
-a full example running a pipeline and checking the result
-
-== Tasks
-
-INFO:: You can find new gradle tasks in `nextflow` group
-
-- `generateIdx`, scan sources and generate the `extensions.idx` resource
-- `zipPlugin` , compile and package your plugin in a zip file ready to be used by Nextflow
-- `unzipPlugin` , extract the zip file into your $HOME/.nextflow/plugins so you can use it in pipelines
-- `jsonPlugin`, create the json spec required by nextflow to publish a plugin
-
-A typical scenario can be, once you've created/implemented some logic in your plugin, you've created some test
-but want to see in action in a pipeline. You can run the `unzipPlugin` task, and it will install the plugin into
-your $HOME/.nextflow/plugin directory
-
-Or you can run the pipeline using the NXF_PLUGINS_TEST_REPOSITORY env with your `build/plugins` directory
-
-
-== Documentation
-
-This template include `asciidoctor` gradle plugin to generate documentation.
-
-You can write your documentation at `src/docs/asciidoc` and run `./gradlew asciidoctor` to build it
-at `build/doc` directory.
-
-Remember to prepare your GitHub repository with GH Pages (go to Settings, Pages and select `GitHub Actions` as source) and your documentation will be published automagically
-
-== Release
-
-This template uses `JReleaser` to publish releases in GitHub (publish in MavenCentral soon). Also you can use
-the `release` GitHub action to run it (it only requires you specify which version are you deploying)
-
+INFO:: Defining different schemas you can improve the read process as the implementation will read only the fields specified in the list, skipping others.

@@ -1,9 +1,7 @@
-# Nextflow Plugin template
+# Parquet Nextflow Plugin
 
-A template for Nextflow plugin
-
-This template can be util when you want to create (and publish) a plugin.
+A Nextflow plugin to read/write parquet files
 
 ## Documentation
 
-https://edn-es.github.io/nf-plugin-template/
+https://edn-es.github.io/nf-parquet/

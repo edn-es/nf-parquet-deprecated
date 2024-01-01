@@ -23,4 +23,4 @@ pluginManagement {
         maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
     }
 }
-rootProject.name = 'nf-plugin-template'
+rootProject.name = 'nf-parquet'

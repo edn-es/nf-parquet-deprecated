@@ -20,6 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRO }}
+
+      - name: Build
+        run: ./gradlew test jsonPlugin
+
       - name: Version
         id: vars
         shell: bash

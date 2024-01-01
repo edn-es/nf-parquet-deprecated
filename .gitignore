@@ -9,3 +9,4 @@ build
 /example/.nextflow.log.*
 /example/work
 /example/.nextflow
+/example/area1.parquet
