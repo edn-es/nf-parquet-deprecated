@@ -38,7 +38,8 @@ class ParquetDSL {
     ParquetDSL(ParquetDSLImpl dsl){
         validate(dsl)
         schemas = dsl.schemas.inject([:]) {map, schemaDSL->
-            def fields = schemaDSL.fields.collect {fieldName->
+            def fieldsList = schemaDSL.fields.size() ? schemaDSL.fields : dsl.catalog.fields*.name
+            def fields = fieldsList.collect {fieldName->
                 def field = dsl.catalog.fields.find {it.name == fieldName }
                 return field.toMap()
             }

@@ -145,4 +145,25 @@ class ParquetDSLSpec extends Specification{
         then:
         thrown(DSLException)
     }
+
+    void "a schema without fields includes all fields"(){
+        when:
+        def ret = ParquetDSL.parse({
+            catalog {
+                field"X" type"double" defaultValue 1.1
+                field"Y" type"string" defaultValue 1.1
+            }
+            schema"test"
+        })
+
+        then:
+        ret
+        ret.schemas.size() == 1
+        ret.schemas['test']
+        ret.schemas['test']['fields'].size() == 2
+        ret.schemas['test']['fields'][0]['name']=='X'
+        ret.schemas['test']['fields'][0]['type']==['double']
+        ret.schemas['test']['fields'][1]['name']=='Y'
+        ret.schemas['test']['fields'][1]['type']==['string']
+    }
 }
