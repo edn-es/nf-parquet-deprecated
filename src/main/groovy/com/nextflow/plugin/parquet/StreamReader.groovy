@@ -16,20 +16,20 @@ import org.apache.parquet.io.InputFile
 class StreamReader {
 
     InputFile inputFile
-    List fields
+    Map schema
 
-    StreamReader(String path, List<Map> fields) {
+    StreamReader(String path, Map schema) {
         def config = new Configuration()
         config.classLoader = StreamReader.classLoader
         config.set("fs.file.impl", LocalFileSystem.name)
         def hadoopPath = new Path(path)
         this.inputFile = HadoopInputFile.fromPath(hadoopPath, config)
-        this.fields = fields
+        this.schema = schema
     }
 
     int iterate(ReadRecordListener listener) {
         def config = new Configuration()
-        AvroReadSupport.setRequestedProjection(config, readSchema(fields))
+        AvroReadSupport.setRequestedProjection(config, mapToSchema())
         int count = 0;
         try (ParquetReader<GenericData.Record> reader = AvroParquetReader.<GenericData.Record> builder(inputFile)
                 .withConf(config)
@@ -44,14 +44,8 @@ class StreamReader {
         count
     }
 
-    protected Schema readSchema(List<Map> fields) {
-        def json = [
-                namespace: "org.nextflow.parquet",
-                type     : "record",
-                name     : "myrecord",
-                fields   : fields
-        ]
-        def schema = JsonOutput.toJson(json)
+    protected Schema mapToSchema() {
+        def schema = JsonOutput.toJson(schema)
         Schema.Parser parser = new Schema.Parser().setValidate(true);
         return parser.parse(schema);
     }
