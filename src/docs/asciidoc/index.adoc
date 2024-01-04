@@ -21,23 +21,13 @@ Configure a schema in `nextflow.config` parquet plugin section
 [source]
 ----
 parquet {
-    schemas = [
-            mySchema : [
-                    [
-                            "name"   : "myString",
-                            "type"   : ["null", "string"]
-                    ], [
-                            "name"   : "myInteger",
-                            "type"   : ["null", "int"]
-                    ]
-            ],
-            onlyMyString : [
-                    [
-                            "name"   : "myString",
-                            "type"   : ["null", "string"]
-                    ]
-            ],
-    ]
+    schemas = {
+        catalog {
+            field "myString" type "string" optional true
+            field "myInteger" type "double" optional true
+        }
+        schema "mySchema"
+    }
 }
 ----
 
