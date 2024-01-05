@@ -75,53 +75,101 @@ class ReadParquetSpec extends Dsl2Spec{
         thrown(RuntimeException)
     }
 
-    def 'should read a parquet file' () {
+    def 'should read a field from parquet file' () {
         given:
-            def dir = Files.createTempDirectory("nf")
-            def file = Files.createTempFile(dir, "test", ".parquet")
-            def path = new org.apache.hadoop.fs.Path(file.toAbsolutePath().toString())
-            def schema = parseSchema()
-            def outputFile = HadoopOutputFile.fromPath(path, new Configuration())
-            try (ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record> builder(outputFile)
-                    .withSchema(schema)
-                    .withCompressionCodec(CompressionCodecName.SNAPPY)
-                    .withRowGroupSize(ParquetWriter.DEFAULT_BLOCK_SIZE)
-                    .withPageSize(ParquetWriter.DEFAULT_PAGE_SIZE)
-                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-                    .withConf(new Configuration())
-                    .withValidation(false)
-                    .withDictionaryEncoding(false)
-                    .build()) {
-                def record = new GenericData.Record(schema)
-                record.put("myString", "hi world of parquet!".toString())
-                record.put("myInteger", 12345)
-                record.put("myDateTime", Instant.now().toEpochMilli())
-                writer.write(record)
-            }
+        def file = writeParquetFile()
 
         when:
         def SCRIPT = """
             import java.nio.file.Path
+
             include {fromParquetFile} from 'plugin/nf-parquet'
+
             def path = Path.of('${file.toAbsolutePath()}')
+
             channel.fromParquetFile( path, 'simpleSchema') 
             """
         and:
         def result = new MockScriptRunner([
                 parquet:[
-                        schemas:[
-                                simpleSchema:[
-                                        [
-                                                name:"myString",
-                                                type: ["string","null"]
-                                        ]
-                                ]
-                        ]
+                        schemas:{
+                            catalog {
+                                field "myString" type"string" optional true
+                            }
+                            schema "simpleSchema" fields "myString"
+                        }
                 ]
         ]).setScript(SCRIPT).execute()
+
+        def val = result.val
+
         then:
-        "$result.val.myString".toString() == 'hi world of parquet!'
+        val
+        val.myString.toString() == 'hi world of parquet!'
+        val.myInteger == null
         result.val == Channel.STOP
+    }
+
+    def 'should read 2 field from parquet file' () {
+        given:
+        def file = writeParquetFile()
+
+        when:
+        def SCRIPT = """
+            import java.nio.file.Path
+
+            include {fromParquetFile} from 'plugin/nf-parquet'
+
+            def path = Path.of('${file.toAbsolutePath()}')
+
+            channel.fromParquetFile( path, 'doubleSchema') 
+            """
+        and:
+        def result = new MockScriptRunner([
+                parquet:[
+                        schemas:{
+                            catalog {
+                                field "myString" type"string" optional true
+                                field "myInteger" type"int" optional true
+                            }
+                            schema "simpleSchema" fields "myString"
+                            schema "doubleSchema" fields "myString", "myInteger"
+                        }
+                ]
+        ]).setScript(SCRIPT).execute()
+
+        def val = result.val
+
+        then:
+        val
+        val.myString.toString() == 'hi world of parquet!'
+        val.myInteger == 12345
+        result.val == Channel.STOP
+    }
+
+    private static Path writeParquetFile(){
+        def dir = Files.createTempDirectory("nf")
+        def file = Files.createTempFile(dir, "test", ".parquet")
+        def path = new org.apache.hadoop.fs.Path(file.toAbsolutePath().toString())
+        def writeSchema = parseSchema()
+        def outputFile = HadoopOutputFile.fromPath(path, new Configuration())
+        try (ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record> builder(outputFile)
+                .withSchema(writeSchema)
+                .withCompressionCodec(CompressionCodecName.SNAPPY)
+                .withRowGroupSize(ParquetWriter.DEFAULT_BLOCK_SIZE)
+                .withPageSize(ParquetWriter.DEFAULT_PAGE_SIZE)
+                .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+                .withConf(new Configuration())
+                .withValidation(false)
+                .withDictionaryEncoding(false)
+                .build()) {
+            def record = new GenericData.Record(writeSchema)
+            record.put("myString", "hi world of parquet!".toString())
+            record.put("myInteger", 12345)
+            record.put("myDateTime", Instant.now().toEpochMilli())
+            writer.write(record)
+        }
+        return file
     }
 
     private static Schema parseSchema() {

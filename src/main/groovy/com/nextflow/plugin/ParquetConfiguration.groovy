@@ -1,23 +1,25 @@
 package com.nextflow.plugin
 
+import com.nextflow.plugin.dsl.ParquetDSL
 import groovy.transform.PackageScope
 
 @PackageScope
 class ParquetConfiguration {
 
-    Map<String, List<Map>> schemas = [:]
+    Map<String, Map> schemas = [:]
 
     ParquetConfiguration(Map map){
         def config = map ?: Collections.emptyMap()
         schemas = parseSchemas(config)
     }
 
-    Map<String, List<Map>> parseSchemas(Map map){
-        def config = map.navigate('schemas') ?: Collections.emptyMap()
-        if( !(config instanceof Map) ){
-            throw new RuntimeException("Bad Schemas configuration values. Needs to be a named map ")
+    Map<String, Map> parseSchemas(Map map){
+        def config = map.navigate('schemas') ?: {}
+        if( !(config instanceof Closure) ){
+            throw new RuntimeException("Bad Schemas configuration values. Needs to be a ParquetDSL closure")
         }
-        config as Map<String, List<Map>>
+        ParquetDSL dsl = ParquetDSL.parse(config)
+        return dsl.schemas
     }
 
 }

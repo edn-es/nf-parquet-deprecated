@@ -38,12 +38,12 @@ class ParquetExtensions extends PluginExtensionPoint{
         return channel
     }
 
-    private void emitRawFile(DataflowWriteChannel channel, Path path, List<Map> fields) {
-        def streamReader = new StreamReader(path.toUri().toString(), fields)
+    private void emitRawFile(DataflowWriteChannel channel, Path path, Map schema) {
+        def streamReader = new StreamReader(path.toUri().toString(), schema)
         streamReader.iterate {record->
             def values = [:]
-            fields.each {
-                values[it.name] = record.get(it.name.toString())
+            schema.fields.each { Map f->
+                values[f.name] = record.get(f.name as String)
             }
             channel.bind(values)
         }
