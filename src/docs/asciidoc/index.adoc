@@ -20,6 +20,10 @@ Configure a schema in `nextflow.config` parquet plugin section
 .nextflow.config
 [source]
 ----
+plugins {
+  id 'nf-parquet@0.0.1-rc2'
+}
+
 parquet {
     schemas = {
         catalog {
@@ -43,3 +47,27 @@ channel
 ----
 
 INFO:: Defining different schemas you can improve the read process as the implementation will read only the fields specified in the list, skipping others.
+
+If you don't want to deal with the definition of fields (or don't know the full schema) you can omit the `schemas`
+closure configuration:
+
+.nextflow.config
+[source]
+----
+plugins {
+  id 'nf-parquet@0.0.1-rc2'
+}
+//<1>
+----
+<1> Don't specify schemas
+
+.readAll.nf
+[source]
+----
+include { fromParquetFile } from 'plugin/nf-parquet'
+
+channel
+        .fromParquetFile( Path.of('area1.parquet') ) //<1>
+        | view
+----
+<1> Don't specify the schema name to use

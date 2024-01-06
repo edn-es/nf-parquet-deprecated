@@ -147,7 +147,61 @@ class ReadParquetSpec extends Dsl2Spec{
         result.val == Channel.STOP
     }
 
-    private static Path writeParquetFile(){
+    def 'should read all fields if schema is null' () {
+        given:
+        def file = writeParquetFile()
+
+        when:
+        def SCRIPT = """
+            import java.nio.file.Path
+
+            include {fromParquetFile} from 'plugin/nf-parquet'
+
+            def path = Path.of('${file.toAbsolutePath()}')
+
+            channel.fromParquetFile( path ) 
+            """
+        and:
+        def result = new MockScriptRunner([:]).setScript(SCRIPT).execute()
+
+        def val = result.val
+
+        then:
+        val
+        val.myString.toString() == 'hi world of parquet!'
+        val.myInteger == 12345
+        val.myDateTime
+        result.val == Channel.STOP
+    }
+
+    def 'should read all fields if schema is null' () {
+        given:
+        def file = writeParquetFile()
+
+        when:
+        def SCRIPT = """
+            import java.nio.file.Path
+
+            include {fromParquetFile} from 'plugin/nf-parquet'
+
+            def path = Path.of('${file.toAbsolutePath()}')
+
+            channel.fromParquetFile( path ) 
+            """
+        and:
+        def result = new MockScriptRunner([:]).setScript(SCRIPT).execute()
+
+        def val = result.val
+
+        then:
+        val
+        val.myString.toString() == 'hi world of parquet!'
+        val.myInteger == 12345
+        val.myDateTime
+        result.val == Channel.STOP
+    }
+
+    private static Path writeParquetFile(int nRecords=1){
         def dir = Files.createTempDirectory("nf")
         def file = Files.createTempFile(dir, "test", ".parquet")
         def path = new org.apache.hadoop.fs.Path(file.toAbsolutePath().toString())
@@ -163,11 +217,13 @@ class ReadParquetSpec extends Dsl2Spec{
                 .withValidation(false)
                 .withDictionaryEncoding(false)
                 .build()) {
-            def record = new GenericData.Record(writeSchema)
-            record.put("myString", "hi world of parquet!".toString())
-            record.put("myInteger", 12345)
-            record.put("myDateTime", Instant.now().toEpochMilli())
-            writer.write(record)
+            for(int i=0; i<nRecords; i++) {
+                def record = new GenericData.Record(writeSchema)
+                record.put("myString", "hi world of parquet!".toString())
+                record.put("myInteger", 12345)
+                record.put("myDateTime", Instant.now().toEpochMilli())
+                writer.write(record)
+            }
         }
         return file
     }
