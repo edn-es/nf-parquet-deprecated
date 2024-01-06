@@ -29,7 +29,9 @@ class StreamReader {
 
     int iterate(ReadRecordListener listener) {
         def config = new Configuration()
-        AvroReadSupport.setRequestedProjection(config, mapToSchema())
+        if( schema ) {
+            AvroReadSupport.setRequestedProjection(config, mapToSchema(schema))
+        }
         int count = 0;
         try (ParquetReader<GenericData.Record> reader = AvroParquetReader.<GenericData.Record> builder(inputFile)
                 .withConf(config)
@@ -44,8 +46,8 @@ class StreamReader {
         count
     }
 
-    protected Schema mapToSchema() {
-        def schema = JsonOutput.toJson(schema)
+    static protected Schema mapToSchema(Map map) {
+        def schema = JsonOutput.toJson(map)
         Schema.Parser parser = new Schema.Parser().setValidate(true);
         return parser.parse(schema);
     }

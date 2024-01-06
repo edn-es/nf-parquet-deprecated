@@ -14,7 +14,10 @@ class ParquetConfiguration {
     }
 
     Map<String, Map> parseSchemas(Map map){
-        def config = map.navigate('schemas') ?: {}
+        if( !map.containsKey('schemas') ){
+            return [:]
+        }
+        def config = map.navigate('schemas')
         if( !(config instanceof Closure) ){
             throw new RuntimeException("Bad Schemas configuration values. Needs to be a ParquetDSL closure")
         }
